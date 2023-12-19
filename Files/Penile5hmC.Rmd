@@ -1,0 +1,439 @@
+# 5-hydroxymethylcytosine in Penile Cancer
+
+__Project:__ "5-Hydroxy-Methyl-Cytosine Content is Strongly Associated with Degree of Histological Differentiation in Penile Squamous Cell Carcinomas"
+
+__List of Authors:__ Michael C. Haffner, MD, PhD; George J. Netto, MD; Cesar Aponte, BS; Kristen L. Lecksell, BS; William G. Nelson MD, PhD; Srinivasan Yegnasubramanian MD, PhD; Alcides Chaux, MD
+
+***
+
+## ABSTRACT
+__Background:__ Cytosine methylation represents an important epigenetic modification that plays a crucial role in normal differentiation as well as carcinogenesis. Recent evidence suggests that methylated cytosine (5mC) can become oxidized to 5-hydroxymethylcytosine (5hmC) in mammalian genome. We have recently shown that global 5hmC levels are greatly reduced in invasive adenocarcinoma. Here we evaluate the status of 5hmC in squamous cell carcinoma of the penis and explore the association of 5hmC with the degree of tumor differentiation.
+
+__Design__: Thirty-eight formalin-fixed paraffin-embedded archival cases of penile squamous cell carcinoma were selected to build a tissue microarray (TMA). Each tumor was sampled 3-9 times. TMA spots were scanned using the APERIO system and uploaded to the TMAJ platform (http://tmaj.pathology.jhmi.edu). In total, 147 individual TMA spots were evaluated. Histological grade was assigned in each spot. Global 5hmC levels were assessed using a 5hmC specific antibody and standard immunohistochemical techniques, as previously described. Extent of 5hmC expression was estimated in each spot as a percentage of positive cells. Correlation between 5hmC and other biomarkers (EGFR and members of the mTOR pathway) was also evaluated. Association between 5hmC extent and histologic grade and subtype was evaluated by the Kruskal-Wallis test and trends were confirmed using Cuzick's test. Correlation was evaluated using the Spearman rank correlation test.
+
+__Results:__ In invasive tumors, extent of 5hmC expression showed a strong association with tumor differentiation, decreasing with increasing histologic grade. Differences were significant (Kruskal-Wallis P < 0.01), as well as trend across ordered categories (Cuzick P < 0.0001). This association seems to be independent of histologic subtype. Addtionally, an inverse and significant association was observed between PTEN expression and 5hmC expression, as well as a positive weak but significant correlation between phos-S6 and 5hmC expression.
+
+__Conclusion:__ In penile squamous cell carcinomas, global 5hmC levels significantly decrease with increased histologic grade. Our finding suggests that alterations in 5hmC expression are associated with carcinogenesis and are inversely correlated with tumor differentiation in penile squamous cell carcinoma.
+
+***
+
+## INTRODUCTION
+* Epigenetic modifications play a crucial role in cellular differentiation and have been implicated in numerous disease states including cancer.
+
+* One of the most studied of these modifications is the addition of a methyl group on the 5-position of the cytosine (5-methylcytosine) base in a CpG dinucleotide. 
+
+* We have previously shown that global 5-hydroximethylcytosine (5hmC) levels are greatly reduced in invasive adenocarcinomas (Oncotarget 2011;2:627). However, the 5hmC content in penile squamous cell carcinomas (SCC) has not been evaluated before.
+
+***
+
+## MATERIAL & METHOD
+```{r GlobalOptions}
+# Setting the global options for the analysis
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE,
+               fig.height = 7, fig.width = 11)
+```
+
+```{r Libraries}
+# Loading the requiered libraries and sources
+library(plyr)
+source("../StandardAnalysis3.R")
+source("../Cuzick.R")
+library(car) # For scatterplots1
+```
+
+```{r dataset}
+# Loading the full dataset
+DataFull <- read.csv("tma852-855_dataset.csv", na.strings = ".")
+# Selecting the variables for the study
+Variables <- c("caseid", "subtype", "grade", "X5hmc")
+DataSelected <- DataFull[, Variables]
+# Subsetting the data to exclude rows with missing cases
+DataSpot <- subset(DataSelected, !is.na(X5hmc))
+DataSpot <- subset(DataSpot, !is.na(grade))
+# Renaming variable of interest
+DataSpot <- rename(DataSpot, c("X5hmc" = "fhmc"))
+# Renaming levels of the "subtype" variable
+DataSpot$subtype <- revalue(DataSpot$subtype, c("basaloid" = "Basaloid",
+                "papillary" = "Papillary", "usual" = "Usual", "warty" = "Warty",
+                "warty-basaloid" = "Warty-Basaloid"))
+# Converting numeric variable "grade" to factor variable and renaming levels
+DataSpot$grade <- factor(DataSpot$grade)
+DataSpot$grade <- revalue(DataSpot$grade, c("1" = "Grade 1", "2" = "Grade 2", "3" = "Grade 3"))
+# Creating a "case-by-case" dataset
+DataCase <- ddply(DataSpot, c("caseid", "subtype"), summarize,
+                  gradeCase = max(as.numeric(grade)), fhmcCase = max(fhmc))
+# Converting numeric variable "gradeCase" to factor variable and renaming levels
+DataCase$gradeCase <- factor(DataCase$gradeCase)
+DataCase$gradeCase <- revalue(DataCase$gradeCase, c("1" = "Grade 1", "2" = "Grade 2", "3" = "Grade 3"))
+# Dropping unused levels
+DataSpot <- droplevels(DataSpot)
+DataCase <- droplevels(DataCase)
+```
+
+A tissue microarray (TMA) was built at the Johns Hopkins TMA Lab Core (Baltimore, MD) from `r nrow(DataCase)` formalin-fixed, paraffin-embedded cases of penile SCC that were identified from the pathology files of the Instituto de Patología e Investigación (Asuncion, Paraguay). For each case, 1 to 4 blocks were selected, and 3 tissue cores of 1 mm each were obtained per block, giving a representation of 3–12 TMA spots per case. From these `r nrow(DataCase)` cases included in the TMA `r nrow(DataSpot)` TMA spots were evaluated.
+
+Histologic grading was done spot by spot, as follows:
+
+* __Grade 1:__ tumors composed of well differentiated cells, almost undistinguishable from normal squamous cells except for the present of minimal basal/parabasal cell atypia.
+
+* __Grade 3:__ tumors predominantly composed of anaplastic cells with little or no keratinization, scanty or minimal amount of cytoplasm, nuclear enlargement with thick nuclear membrane, nuclear pleomorphism, clumped chromatin, prominent nucleoli and abundant mitotic figures.
+
+* __Grade 2:__ this was an exclusion category, including tumors not fitting into criteria described for grades 1 or 3.
+
+### Evaluation of 5mhC expression
+TMA spots were scanned using the APERIO system (Aperio Technologies, Inc., Vista, CA) and uploaded to TMAJ, an open-source platform for online evaluation of TMA images (available at http://tmaj.pathology.jhmi.edu). TMA spots were evaluated on a computer screen, and percentages of positive cells (nuclear staining) were estimated by naked eye, spot by spot.
+
+For the case-by-case analysis the assigned histologic grade corresponded to the highest grade observed accross the TMA spots. The same approach was used for assigning percentages of 5hmC expression.
+
+### Association between 5hmC and other biomarkers
+The association between 5hmC expression and other biomarkers was evaluated as well, using previosly published data on the same TMAs (Histopathology 2014;64:863-71, Hum Pathol 2013;44:2690-5). The evaluated biomarkers included EGFR and members of the mTOR pathway (PTEN, phos-AKT, phos-mTOR, and phos-S6).
+
+### Statistical Analysis
+Association between percentage of 5hmC positive cells and histologic grade and subtype was evaluated by the Kruskal-Wallis test and trends were confirmed using Cuzick's test. Correlation was evaluated using Spearman rank correlation test. A 2-tailed P < 0.05 was required for statistical significance. Data were analyzed using R Version 3.1.1 “Sock it to Me”(R Foundation for Statistical Computing, Vienna, Austria).
+
+***
+
+## RESULTS
+The distribution by histologic subtype and grade (for all cases) is shown below.
+
+* __Distribution by histologic subype__
+```{r SubtypeDistribution}
+# Table
+table.prop(DataCase$subtype)
+# Barplot
+Subtype.plot <- with(DataCase, barplot(table(subtype), col = gray.colors(5), cex.lab = 1.25,
+                                       xlab = "Histologic subtype", ylab = "No. cases",
+                                       ylim = c(0, 25)))
+with(data = DataCase, text(Subtype.plot, paste("N =", table(subtype)), y = table(subtype) + 1))
+```
+
+* __Distribution by histologic grade__
+```{r GradeDistribution}
+# Table
+table.prop(DataCase$gradeCase)
+# Barplot
+Grade.plot <- with(DataCase, barplot(table(gradeCase), cex.lab = 1.25, col = gray.colors(3),
+                                     xlab = "Histologic grade", ylab = "No. cases",
+                                     ylim = c(0, 25)))
+with(data = DataCase, text(Grade.plot, paste("N =", table(gradeCase)), y = table(gradeCase) + 1))
+```
+
+***
+
+### Association of 5mhC with histologic grade
+* __Immunohistochemical 5hmC expression__
+
+The figure below shows the immunohistochemical expression of 5mhC by histologic grades. As seen, nuclear 5mhC expression decreased from grade 1 SCC (upper left and upper right) to grade 2 SCC (lower left) to grade 3 SCC (lower right).
+
+![Image title](penile_5hmc_fig1.jpg)
+
+* __Boxplots of 5hmC expression__
+
+The association of 5hmC expression and histologic grade is shown in the boxplots, considering spot-by-spot and case-by-case distributions. As seen, 5hmC expression decreased from grade 1 to grade 2 to grade 3 in both distributions. The decrease in 5hmC expression seen in the boxplots is statistically significant (Kruskal-Wallis test), for both spot-by-spot and case-by-case distributions. The trend for decreasing 5hmC expression according to increasing histologic grades is also statistically significant (Cuzick test), for both the spot-by-spot and case-by-case distributions.
+
+```{r GradeTests}
+# Spot-by-spot KW test
+GradeKW.spot <- kruskal.test(fhmc ~ grade, data = DataSpot)
+# Case-by-Case KW test
+GradeKW.case <- kruskal.test(fhmcCase ~ gradeCase, data = DataCase)
+# Spot-by-spot Cuzick test
+GradeCuz.spot <- cuzick(DataSpot$grade, DataSpot$fhmc)
+# Case-by-Case Cuzick test
+GradeCuz.case <- cuzick(DataCase$gradeCase, DataCase$fhmcCase)
+```
+
+```{r GradePlots}
+par(mfrow = c(1, 2))
+# Spot-by-spot boxplot
+with(DataSpot, boxplot(fhmc ~ grade, main = "Spot-by-Spot",
+                       ylim = c(0, 115), col = gray.colors(3))
+     )
+legend(x = "topleft", bty = "n", paste("Kruskal-Wallis P value =",
+                           format(GradeKW.spot$p.value, digits = 2, width = 6),
+                           "\nCuzick P value =",
+                           format(GradeCuz.spot, digits = 2, width = 6)
+                           )
+     )
+# Case-by-case boxplot
+with(DataCase, boxplot(fhmcCase ~ gradeCase, main = "Case-by-Case",
+                       ylim = c(0, 115), col = gray.colors(3))
+     )
+legend(x = "topleft", bty = "n", paste("Kruskal-Wallis P value =",
+                           format(GradeKW.case$p.value, digits = 2, width = 6),
+                           "\nCuzick P value =",
+                           format(GradeCuz.case, digits = 2, width = 6)
+                           )
+     )
+```
+
+***
+
+### Association of 5hmC with histologic subtype
+
+The distribution of 5hmC expression by histologic subtypes is shown below. As seen, 5hmC expression was higher in usual and papillary SCCs and lower in tumors with warty/basaloid features (warty SCC, basaloid SCC, and warty-basaloid SCC). The differences of 5hmC expression among SCC subtypes is marginally below the threshold for statistical significance, as shown by the Kruskal-Wallis test. This finding suggests that histologic subtype is associated with 5hmC expression, a suggestion that merits further investigation.
+
+```{r SubtypeKW}
+# 5hmC by histologic subtype in all cases
+SubtypeKW.all <- kruskal.test(fhmcCase ~ subtype, data = DataCase)
+```
+
+```{r SubtypePlots}
+with(DataCase, boxplot(fhmcCase ~ subtype, cex.lab = 1.25, col = gray.colors(5),
+                       ylim = c(0, 115),
+                       xlab = "Histologic subtype", ylab = "5hmC expression (%)")
+     )
+legend(x = "topleft", bty = "n", paste("Kruskal-Wallis P value =",
+                           format(SubtypeKW.all$p.value, digits = 2, width = 6)
+                           )
+     )
+```
+
+* __Barplot of histologic grade by subtype__
+
+Below is the barplot for histologic subtypes by histologic grade. The barplot shows that grade 1 is observed only in usual and papillary SCCs while grade 3 is observed only in tumors with warty/basaloid features. This suggests that association observed between histologic subtype and 5hmC expression is mostly driven by histologic grade. 
+
+```{r SubtypeGradePlot}
+# Histologic subtype by grade in all cases
+SubtypeGrade.plot <- with(DataCase, barplot(table(gradeCase, subtype), beside = TRUE,
+                                            cex.lab = 1.25, xlab = "Histologic subtype",
+                                            ylab = "No. Cases", ylim = c(0, 12),
+                                            legend.text = TRUE, args.legend = list(x = 4)))
+with(data = DataCase, text(SubtypeGrade.plot, paste(table(gradeCase, subtype)), y = table(gradeCase, subtype) + 0.5))
+```
+
+To test this hypothesis we decided to evaluate 5hmC expression by histologic grades in usual SCC, given that this is the only subtype in which all 3 grades are observed. This analysis was done spot-by-spot, considering the variation of histologic grades among TMA spots.
+
+* __Boxplot of 5hmC in usual SCC__
+
+The boxplot of 5hmC expression by grades in usual SCC shows the same tendency observed for all cases, with decreasing 5mhC expression with increasing histologic grades. The differences in 5hmC expression by histologic grades observed in usual SCC is statistically significant (Kruskal-Wallis test). The trend for decreasing 5hmC expression according to increasing histologic grades is statistically significant (Cuzick test) in usual SCC.
+
+```{r UsualTests}
+UsualKW <- with(DataSpot[DataSpot$subtype == "Usual",], kruskal.test(fhmc ~ grade))
+UsualCuz <- with(DataSpot[DataSpot$subtype == "Usual",], cuzick(grade, fhmc))
+```
+
+```{r UsualPlot}
+with(DataSpot[DataSpot$subtype == "Usual",],
+     boxplot(fhmc ~ grade, main = "Usual SCC", col = gray.colors(3),
+             ylim = c(0, 115),
+             ylab = "5hmC Expression (%)", cex.lab = 1.25)
+     )
+legend(x = "topleft", bty = "n", paste("Kruskal-Wallis P value =",
+                           format(UsualKW$p.value, digits = 2, width = 6),
+                           "\nCuzick P value =",
+                           format(UsualCuz, digits = 2, width = 6)
+                           )
+     )
+```
+
+***
+
+### Association between 5hmC and other biomarkers
+
+As mentioned before, the association between 5hmC and EGFR and members of the mTOR pathway (PTEN, phos-AKT, phos-mTOR, and phos-S6) was evaluated as well.
+
+```{r DatasetCorrelation}
+# Selecting variables for the analysis
+Correlation <- c("X5hmc", "pten_cyt_", "pakt_nuc_", "pmtor_cyt_", "ps6_cyt_", "egfr_cat", "egfr_score")
+DataCorrelation <- DataFull[, Correlation]
+# Subsetting the dataset to exclude rows with missing cases
+DataCorrelation <- subset(DataCorrelation, !is.na(X5hmc))
+# Renaming variables of interest
+DataCorrelation <- rename(DataCorrelation, c(
+        "X5hmc" = "fhmc",
+        "pten_cyt_" = "PTEN",
+        "pakt_nuc_" = "AKT",
+        "pmtor_cyt_" = "mTOR",
+        "ps6_cyt_" = "S6",
+        "egfr_cat" = "EGFR"
+        ))
+# Renaming levels
+DataCorrelation$PTEN <- revalue(as.factor(DataCorrelation$PTEN), c(
+        "1" = "Normal",
+        "2" = "Decreased",
+        "3" = "Lost"
+        ))
+DataCorrelation$EGFR <- revalue(as.factor(DataCorrelation$EGFR), c(
+        "0" = NA,
+        "1" = "Negative EGFR",
+        "2" = "Low EGFR",
+        "3" = "High EGFR"
+        ))
+# Dropping unused levels
+DataCorrelation <- droplevels(DataCorrelation)
+```
+
+* __5hmC expression and PTEN loss__
+
+The distribution of PTEN expression is depicted below. Briefly, more than two-thirds of TMA spots showed decreased or loss of PTEN expression. Comparison of 5hmC by PTEN expression showed lower levels of 5hmC expression in spots with normal PTEN expression and higher levels of 5hmC expression in spots with decreased or loss of PTEN expression. The difference was statistically significant (Kruskal-Wallis test) although the trend (Cuzick test) was only marginally significant.
+
+```{r PTEN}
+# PTEN status
+table.prop(DataCorrelation$PTEN)
+# Barplot
+PTEN.plot <- with(data = DataCorrelation, barplot(table(PTEN), col = gray.colors(3),
+                                                  xlab = "PTEN Expression", ylab = "No. Spots",
+                                                  cex.lab = 1.25, ylim = c(0, 60)
+                                                  )
+                  )
+with(data = DataCorrelation, text(PTEN.plot, paste("N =", table(PTEN)), y = table(PTEN) + 2
+                                  )
+     )
+# Kruskal-Wallis test
+PTENKW <- kruskal.test(fhmc ~ PTEN, data = DataCorrelation)
+# Cuzick test
+PTENCuz <- with(DataCorrelation, cuzick(PTEN, fhmc))
+# Boxplot
+boxplot(fhmc ~ PTEN, data = DataCorrelation, col = gray.colors(3),
+        ylim = c(0, 115),
+        xlab = "PTEN Expression", ylab = "5hmC Expression (%)", cex.lab = 1.25
+        )
+legend(x = "topleft", bty = "n", paste("Kruskal-Wallis P value =",
+                           format(PTENKW$p.value, digits = 2, width = 6),
+                           "\nCuzick P value =",
+                           format(PTENCuz, digits = 2, width = 6)
+                           )
+     )
+```
+
+* __5hmC and phos-AKT expression__
+
+Distribution of phos-AKT expression is shown below. No significant correlation was found between 5hmC expression and phos-AKT expression (Spearman rank correlation).
+
+```{r AKT}
+# phos-AKT expression
+descriptive(DataCorrelation$AKT)
+# Descriptive plots
+par(mfrow = c(1, 2))
+hist(DataCorrelation$AKT, breaks = 15, freq = FALSE, main = "",
+     xlab = "phos-AKT Expression (%)", ylab = "Probability Density", cex.lab = 1.25
+     )
+lines(density(DataCorrelation$AKT, na.rm = TRUE))
+boxplot(DataCorrelation$AKT, ylab = "phos-AKT Expression (%)", cex.lab = 1.25
+        )
+# Spearman test
+AKTSpear <- cor.test(~ AKT + fhmc, data = DataCorrelation, method = c("spearman"))
+par(mfrow = c(1, 1))
+# Correlation plot
+scatterplot(AKT ~ fhmc, data = DataCorrelation, boxplots = FALSE, cex.lab = 1.25,
+            ylim = c(0, 20),
+            xlab = "5-hydroxymethylcytosine Expression (%)",
+            ylab = "phos-AKT Expression (%)",
+            grid = FALSE
+            )
+legend(x = "topleft", bty = "n", paste("Spearman rho =", 
+                          format(AKTSpear$estimate, digits = 2, width = 6),
+                          "\nP value =",
+                          format(AKTSpear$p.value, digits = 2, width = 6)
+                           )
+     )
+```
+
+* __5hmC and phos-mTOR expression__
+
+Distribution of phos-mTOR expression is shown below. No significant correlation was found between 5hmC expression and phos-mTOR expression (Spearman rank correlation).
+
+```{r mTOR}
+# phos-mTOR expression
+descriptive(DataCorrelation$mTOR)
+# Descriptive plots
+par(mfrow = c(1, 2))
+hist(DataCorrelation$mTOR, freq = FALSE, main = "",
+     xlab = "phos-mTOR Expression (%)", ylab = "Probability Density", cex.lab = 1.25,
+     ylim = c(0, 0.20)
+     )
+lines(density(DataCorrelation$mTOR, na.rm = TRUE))
+boxplot(DataCorrelation$mTOR, ylab = "phos-mTOR Expression (%)", cex.lab = 1.25
+        )
+# Spearman test
+mTORSpear <- cor.test(~ mTOR + fhmc, data = DataCorrelation, method = c("spearman"))
+# Correlation plot
+par(mfrow = c(1, 1))
+scatterplot(mTOR ~ fhmc, data = DataCorrelation, boxplots = FALSE, cex.lab = 1.25,
+            ylim = c(0, 65),
+            xlab = "5-hydroxymethylcytosine Expression (%)",
+            ylab = "phos-mTOR Expression (%)",
+            grid = FALSE)
+legend(x = "topleft", bty = "n", paste("Spearman rho =", 
+                          format(mTORSpear$estimate, digits = 2, width = 6),
+                          "\nP value =",
+                          format(mTORSpear$p.value, digits = 2, width = 6)
+                           )
+     )
+```
+
+* __5hmC and phos-S6 expression__
+
+Distribution of phos-S6 expression is shown below. A positive weak but significant correlation was found between 5hmC expression and phos-S6 expression (Spearman rank correlation).
+
+```{r S6}
+# phos-S6 expression
+descriptive(DataCorrelation$S6)
+# Descriptive plots
+par(mfrow = c(1, 2))
+hist(DataCorrelation$S6, freq = FALSE, main = "",
+     xlab = "phos-S6 Expression (%)", ylab = "Probability Density", cex.lab = 1.25,
+     ylim = c(0, 0.04)
+     )
+lines(density(DataCorrelation$S6, na.rm = TRUE))
+boxplot(DataCorrelation$S6, ylab = "phos-S6 Expression (%)", cex.lab = 1.25
+        )
+# Spearman test
+S6Spear <- cor.test(~ S6 + fhmc, data = DataCorrelation, method = c("spearman"))
+# Correlation plot
+par(mfrow = c(1, 1))
+scatterplot(S6 ~ fhmc, data = DataCorrelation, boxplots = FALSE, cex.lab = 1.25,
+            ylim = c(0, 100),
+            xlab = "5-hydroxymethylcytosine Expression (%)",
+            ylab = "phos-S6 Expression (%)",
+            grid = FALSE)
+legend(x = "topleft", bty = "n", paste("Spearman rho =", 
+                          format(S6Spear$estimate, digits = 2, width = 6),
+                          "\nP value =",
+                          format(S6Spear$p.value, digits = 2, width = 6)
+                           )
+     )
+```
+
+* __5hmC and EGFR expression__
+
+Most of TMA spots showed EGFR expression, with about one-half of them showing high EGFR expression. The distribution of EGFR expression is shown below. No significant association was found between EGFR expression and 5hmC expression (Kruskal-Wallis test).
+
+```{r EGFR}
+# EGFR expression
+table.prop(DataCorrelation$EGFR)
+# Barplot
+EGFR.plot <- with(data = DataCorrelation, barplot(table(EGFR), col = gray.colors(3),
+                                                  xlab = "EGFR Expression",
+                                                  ylab = "No. Spots",
+                                                  cex.lab = 1.25, ylim = c(0, 90)
+                                                  )
+                  )
+with(data = DataCorrelation, text(EGFR.plot, paste("N =", table(EGFR)), y = table(EGFR) + 2
+                                  )
+     )
+# Kruskal-Wallis test
+EGFRKW <- kruskal.test(fhmc ~ EGFR, data = DataCorrelation)
+# Boxplot
+boxplot(fhmc ~ EGFR, data = DataCorrelation, col = gray.colors(3),
+        ylim = c(0, 110), 
+        xlab = "EGFR Expression", ylab = "5hmC Expression (%)", cex.lab = 1.25
+        )
+legend(x = "topleft", bty = "n", paste("Kruskal-Wallis P value =",
+                                       format(EGFRKW$p.value, digits = 2, width = 6)
+                           )
+     )
+```
+
+***
+
+## CONCLUSIONS
+
+* In penile SCC, 5-hydroxymethylcytosine expression decreases with increasing histologic grades. This trend seems to be independent of histologic subtype. Addtionally, an inverse and significant association was observed between PTEN expression and 5hmC expression, as well as a positive weak but significant correlation between phos-S6 and 5hmC expression.
+
+* These findings suggest that alterations in 5hmC expression are associated with tumor progression and are inversely correlated with tumor differentiation in invasive penile SCC.
+
+* Future studies focusing on penile precursor lesions (penile intraepithelial neoplasia) will evaluate if these alterations in 5hmC expression are a crucial event in early carcinogenesis.
+
+***
